@@ -48,6 +48,7 @@ public:
     }
 
     Matrix& operator=(const Matrix& m) {
+        if(this == &m) return *this;
         std::cout<<"copy assignment operator"<<std::endl;
         Matrix tmp(m);
         swap(tmp);

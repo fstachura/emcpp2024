@@ -8,6 +8,7 @@ int main() {
     Matrix m1; // default constructor: N=M=0, data=nullptr
     Matrix m2(3,4); // N = 3, M = 4, data = N*M doubles set to 0.0
     Matrix m3({{1,2,3},{32, 23, 22},{3,234,23,44}}); // from initializer_list
+
     std::cout << m2(1,1) << std::endl; // 0 - the first element in data (we count from 1)
     std::cout << m3(2,2) << std::endl; // 23
     std::cout << m3; // prints matrix
