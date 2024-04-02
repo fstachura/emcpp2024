@@ -30,7 +30,51 @@
 * rvalues can be cv (const/volatile) qualified 
     * lvalue to rvalue conversion - if t is non-class, then type of rvalue is the cv-unqualified version of T. otherwise, type is T
 
+### templates
+
+* more specialized templates should come last
+* primary template (most general) should be declared first, before any specialization
+
+#### function template type deduction
+
+* universal reference - && in type deduction context (auto or templated parameters). basically either a r-value or l-value.
+* T is a pointer or a reference type
+    * if expression is a reference or a pointer, ignore the reference part of the type, then pattern match expr against T 
+        * ex. both int and int& will be passed by reference, c/v left in the type
+        * won't match r-values (constants in parameters won't work)
+    * in case of references, arrays will be passed as arrays
+        * `const char[13] => T& = const char (&)[13]`
+    * in case of references, function pointers will be passed as a function reference
+* T is a universal reference (T&&)
+    * expr is lvalue - both t and paramtype are deduced to be lvalue references (const/volatile qualifiers are left)
+        * basically both value types and reference types will be passed by a reference
+    * expr is rvalue - the first case (T is a pointer or a reference type) applies (?)
+        * ex. constants in parameters will be passed as &&
+* T is neither a pointer nor a reference
+    * argument will be passed by value
+    * ignore reference, const/volatile part, then pattern match against parameter type
+        * ex. bot int, const int and const int& will be passed by value (int, const and & stripped)
+        * `const char* const` will be passed as `const char*` (you can modify the pointer but not the contents)
+    * arrays will be passed as pointers
+        * `const char[13] => T& = const char*`
+    * function references will be passed as a pointer
+* tldr
+    * during deduction, reference arguments in templates are not treated as references, the reference part is ignored
+    * during deduction for universal references, l-values are treated in a special way
+    * during deduction for value parameters, const and volatile parts of the expression type are ignored
+    * during deduction, array or function pointers are turned into pointers unless template parameter is a reference
+
+###### you can deduce array size
+
+```c++
+template<typename T, std::size N>
+auto f(T (&)[N]) {
+    return N;
+}
+```
+
 ### sources
 
 * https://eli.thegreenplace.net/2011/12/15/understanding-lvalues-and-rvalues-in-c-and-c/#id3
+* https://ww2.ii.uj.edu.pl/~kapela/emcpp/
 

@@ -118,8 +118,7 @@ int main() {
   /// a value of a polynomial of degree n with coefficients a at the point x.
   auto polynomial = [](double* a, int n) {
     return [a, n](auto x) {
-      int c = 0;
-      return std::accumulate(a, a+n+1, 0.0, [n, x, c](auto sum, auto l) mutable {
+      return std::accumulate(a, a+n+1, 0.0, [n, x, c=0](auto sum, auto l) mutable {
 	return sum+l*std::pow(x, c++);
       });
     };
