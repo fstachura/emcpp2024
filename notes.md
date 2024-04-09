@@ -64,6 +64,12 @@
     * during deduction for value parameters, const and volatile parts of the expression type are ignored
     * during deduction, array or function pointers are turned into pointers unless template parameter is a reference
 
+###### auto deduction
+
+* same as template type deduction (`const auto`, `auto&`, `auto&&` is supported) except that initializer lists are deduced to `std::initializer_list<T>`
+* types of initializer lists are not deduced by templates
+* auto in return types and lambda args uses template deduction rules
+
 ###### you can deduce array size
 
 ```c++
@@ -71,6 +77,40 @@ template<typename T, std::size N>
 auto f(T (&)[N]) {
     return N;
 }
+```
+
+### decltype
+
+* is the declaration type of a name (or expression)
+* `decltype(auto)` - use decltype deduction rules (especially useful for delayed return declaration). references will be references, unlike with normal auto which removes them
+* `int x;`, `decltype(x)` - int, `decltype((x))` - int&. l-values more complicated than names are references to l-values. if an l-value expression that is not a name has type T, then decltype is `T&`
+* `decltype(auto) f() { int x = 0; return (x); }` - return type evaluates to `int&`!
+
+#### decltype deduction rules
+
+```c++
+Object o;
+const Object& r = o;
+auto o1 = o;            // Object
+decltype(auto) o1 = o;  // const Object&
+```
+
+#### delayed return type declaration
+
+```c++
+template<typename A, typename B>
+auto test(A& a, B b) -> decltype(a[b]) {
+    ...
+}
+```
+
+### display deduced types
+
+```c++
+template typename<T>
+class TD;
+
+TD<decltype(x)> xt;
 ```
 
 ### sources
