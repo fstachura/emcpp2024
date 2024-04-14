@@ -113,6 +113,17 @@ class TD;
 TD<decltype(x)> xt;
 ```
 
+### random
+
+#### typename in function return type
+
+```c++
+template<typename... Ts>
+typename std::tuple_element<0, std::tuple<Ts...>>::type average(Ts... t) {
+  return (t + ...)/sizeof...(Ts);
+}
+```
+
 ### sources
 
 * https://eli.thegreenplace.net/2011/12/15/understanding-lvalues-and-rvalues-in-c-and-c/#id3
