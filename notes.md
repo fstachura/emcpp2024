@@ -12,11 +12,19 @@
 * default no-parameters constructor is generated only if there are no constructors with parameters
 * remember to check for equality with this in move and copy constructors
 
+#### initialization
+
+* braced initialization - avoids implicit narrowing conversions of builtin types
+* braced init will call normal constructors if any match and if std::initializer_list constructor is not defined. if any constructor contains std::initializer_list, it will be prioritized when using braced init
+* guessing whether to use braced or parenthesis initialization in templated functions that pass args to constructors is generally impossible
+* empty braces mean default constructor, not std::initializer_list. use `({})` to force empty std::initializer_list
+* everything that can be interpreted as a declaration, has to be interpreted as a function declaration. example: `A a()` - function declaration. use braces instead: `A a{}`
+
 ### memory management
 
 * new/malloc are not compatible (cant free/delete on new/malloc pointers)
 
-### lvalues and rvalues
+#### lvalues and rvalues
 
 * lvalue - object that occupies some identifiable section of memory
 * rvalue - objects that arent lvalues
@@ -30,14 +38,20 @@
 * rvalues can be cv (const/volatile) qualified 
     * lvalue to rvalue conversion - if t is non-class, then type of rvalue is the cv-unqualified version of T. otherwise, type is T
 
+#### nullptr
+
+* using 0 or NULL instead of nullptr in overload context can fail, because both are interpreted as int, unlike nullptr
+
 ### templates
 
 * more specialized templates should come last
 * primary template (most general) should be declared first, before any specialization
+* dependent (on templates) types have to be prepended with typename
+* you can prevent template specializations from being instantiated with delete
 
 #### function template type deduction
 
-* universal reference - && in type deduction context (auto or templated parameters). basically either a r-value or l-value.
+* universal reference - && in type deduction context (auto or templated parameters). basically either a r-value or l-value. only for template functions. IN CONTEXT OF CLASS MEMBERS IS AN R-VALUE
 * T is a pointer or a reference type
     * if expression is a reference or a pointer, ignore the reference part of the type, then pattern match expr against T 
         * ex. both int and int& will be passed by reference, c/v left in the type
@@ -64,13 +78,29 @@
     * during deduction for value parameters, const and volatile parts of the expression type are ignored
     * during deduction, array or function pointers are turned into pointers unless template parameter is a reference
 
-###### auto deduction
+#### typename in function return type
+
+```c++
+template<typename... Ts>
+typename std::tuple_element<0, std::tuple<Ts...>>::type average(Ts... t) {
+  return (t + ...)/sizeof...(Ts);
+}
+```
+
+#### crtp
+
+#### auto deduction
 
 * same as template type deduction (`const auto`, `auto&`, `auto&&` is supported) except that initializer lists are deduced to `std::initializer_list<T>`
 * types of initializer lists are not deduced by templates
 * auto in return types and lambda args uses template deduction rules
+* use static_cast and auto instead of initializer to show intent
 
-###### you can deduce array size
+#### lambdas
+
+* lambdas assigned to std::function might allocate. lambdas assigned to auto likely wont
+
+#### you can deduce array size
 
 ```c++
 template<typename T, std::size N>
@@ -78,6 +108,16 @@ auto f(T (&)[N]) {
     return N;
 }
 ```
+
+#### display deduced types
+
+```c++
+template typename<T>
+class TD;
+
+TD<decltype(x)> xt;
+```
+
 
 ### decltype
 
@@ -104,28 +144,18 @@ auto test(A& a, B b) -> decltype(a[b]) {
 }
 ```
 
-### display deduced types
+### using
 
-```c++
-template typename<T>
-class TD;
+* using can be parametrized, typedef cannot
 
-TD<decltype(x)> xt;
-```
+### enums
 
-### random
-
-#### typename in function return type
-
-```c++
-template<typename... Ts>
-typename std::tuple_element<0, std::tuple<Ts...>>::type average(Ts... t) {
-  return (t + ...)/sizeof...(Ts);
-}
-```
+* enum class - scoped 
+* enum - unscoped, enum members are available globally
 
 ### sources
 
 * https://eli.thegreenplace.net/2011/12/15/understanding-lvalues-and-rvalues-in-c-and-c/#id3
 * https://ww2.ii.uj.edu.pl/~kapela/emcpp/
+* Scott Meyers - Effective Modern C++ 
 

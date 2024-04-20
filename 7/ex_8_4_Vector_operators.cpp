@@ -1,96 +1,44 @@
 #include <iostream>
 using namespace std;
 
+class BaseVectorOps {
+};
+
 template <int N>
 class Vector;
 
 template <typename A>
 struct VectorMulByScalarOp;
 
-template<typename C, int N>
-struct VectorAddOpBase {
-  int operator[](int index) const {
-    auto cthis = static_cast<const C*>(this);
-    return cthis->a[index] + cthis->b[index];
-  }
-
-  operator Vector<N>() const {
-    Vector<N> result;
-    for(int i=0; i != N; i++) {
-      result[i] = this->operator[](i);
-    }
-    return result;
-  }
-};
-
-template <typename A, typename B>
-struct VectorAddOp: public VectorAddOpBase<VectorAddOp<A, B>, A::size> {
-  const A a;
-  const B b;
-  const static int size = A::size;
-
-  VectorAddOp(const A& a, const B& b): a(a), b(b) {
-    static_assert(A::size == B::size);
-  }
-};
-
-template <typename T, int N>
-struct VectorAddOp<Vector<N>, T>: public VectorAddOpBase<VectorAddOp<Vector<N>, T>, N>  {
-  const Vector<N>& a;
-  const T b;
-  const static int size = N;
-
-  VectorAddOp(const Vector<N>& a, const T& b): a(a), b(b) {
-    static_assert(N == T::size);
-  }
-};
-
-template <typename T, int N>
-struct VectorAddOp<T, Vector<N>>: public VectorAddOpBase<VectorAddOp<T, Vector<N>>, N> {
-  const T a;
-  const Vector<N>& b;
-  const static int size = N;
-
-  VectorAddOp(const T& a, const Vector<N>& b): a(a), b(b) {
-    static_assert(N == T::size);
-  }
+template <typename T>
+struct VectorSizeTrait {
+  const static int size = T::size;
 };
 
 template <int N>
-struct VectorAddOp<Vector<N>, Vector<N>>: public VectorAddOpBase<VectorAddOp<Vector<N>, Vector<N>>, N> {
-  const Vector<N>& a;
-  const Vector<N>& b;
+struct VectorSizeTrait<Vector<N>&> {
   const static int size = N;
-
-  VectorAddOp(const Vector<N>& a, const Vector<N>& b): a(a), b(b) {
-  }
 };
 
-template<typename A, typename B>
-auto operator*(int s, const VectorAddOp<A, B>& v) {
-  return VectorMulByScalarOp<VectorAddOp<A, B>>(s, v);
-}
+template <typename A, typename B>
+struct VectorAddOp: public BaseVectorOps {
+  const A a;
+  const B b;
+  const static int size = VectorSizeTrait<A>::size;
+  const static int a_size = VectorSizeTrait<A>::size;
+  const static int b_size = VectorSizeTrait<A>::size;
 
-template<typename T, typename A, typename B>
-auto operator+(const VectorAddOp<A, B>& a, const T& n) {
-  return VectorAddOp<VectorAddOp<A, B>, T>(a, n);
-}
-
-template<typename T, typename A, typename B>
-auto operator-(const VectorAddOp<A, B>& a, const T& n) {
-  return VectorAddOp<VectorAddOp<A, B>, VectorMulByScalarOp<T>>(a, VectorMulByScalarOp<T>(-1, n));
-}
-
-template <typename C, int N>
-struct VectorMulByScalarOpBase {
-  int operator[](int index) const {
-    auto cthis = static_cast<const C*>(this);
-    return (cthis->s)*(cthis->a[index]);
+  VectorAddOp(A a, B b): a(a), b(b) {
+    static_assert(a_size == b_size);
   }
 
-  operator Vector<N>() const {
-    Vector<C::A::size> result;
-    for(int i=0; i != C::A::size; i++) {
+  int operator[](int index) const {
+    return a[index] + b[index];
+  }
+
+  operator Vector<size>() const {
+    Vector<size> result;
+    for(int i=0; i != size; i++) {
       result[i] = this->operator[](i);
     }
     return result;
@@ -98,44 +46,29 @@ struct VectorMulByScalarOpBase {
 };
 
 template <typename A>
-struct VectorMulByScalarOp: public VectorMulByScalarOpBase<VectorMulByScalarOp<A>, A::size> {
+struct VectorMulByScalarOp: public BaseVectorOps {
   int s;
   const A a;
-  const static int size = A::size;
+  const static int size = VectorSizeTrait<A>::size;
 
-  VectorMulByScalarOp(int s, const A& a): s(s), a(a) {
+  VectorMulByScalarOp(int s, A a): s(s), a(a) {
+  }
+
+  int operator[](int index) const {
+    return s*a[index];
+  }
+
+  operator Vector<size>() const {
+    Vector<size> result;
+    for(int i=0; i != size; i++) {
+      result[i] = this->operator[](i);
+    }
+    return result;
   }
 };
 
 template <int N>
-struct VectorMulByScalarOp<Vector<N>>: 
-  public VectorMulByScalarOpBase<VectorMulByScalarOp<Vector<N>>, N> {
-
-  int s;
-  const Vector<N>& a;
-  const static int size = N;
-
-  VectorMulByScalarOp(int s, const Vector<N>& a): s(s), a(a) {
-  }
-};
-
-template<typename A>
-auto operator*(const VectorMulByScalarOp<A>& op, int s) {
-  return VectorMulByScalarOp<VectorMulByScalarOp<A>>(s, op);
-}
-
-template<typename A, typename T>
-auto operator+(const VectorMulByScalarOp<A>& op, const T& n) {
-  return VectorAddOp<VectorMulByScalarOp<A>, T>(op, n);
-}
-
-template<typename A, typename T>
-auto operator-(const VectorMulByScalarOp<A>& op, const T& n) {
-  return VectorAddOp<VectorMulByScalarOp<A>, VectorMulByScalarOp<T>>(op, VectorMulByScalarOp<T>(-1, n));
-}
-
-template <int N>
-class Vector{
+class Vector: public BaseVectorOps {
   int data[N];
  public:
   const static int size = N;
@@ -163,32 +96,50 @@ class Vector{
 	return data[index];
   }
 
-  auto operator*(int s) {
-    return VectorMulByScalarOp<Vector<N>>(s, *this);
-  }
-
-  friend auto operator*(int s, const Vector<N>& v) {
-    return VectorMulByScalarOp<Vector<N>>(s, v);
-  }
-
-  template<typename T>
-  auto operator+(const T& n) {
-    return VectorAddOp<Vector<N>, T>(*this, n);
-  }
-
-  template<typename T>
-  auto operator-(const T& n) {
-    return VectorAddOp<Vector<N>, VectorMulByScalarOp<T>>(*this, VectorMulByScalarOp<T>(-1, n));
-  }
-
   friend ostream & operator << (ostream & out, const Vector & m){
-	for(auto x : m.data){
-	  cout << x << ", ";
-	}
-	return out;
+    for(auto x : m.data){
+      cout << x << ", ";
+    }
+    return out;
   }
 };
 
+template<typename T>
+concept DerivedBaseVectorOps = std::derived_from<T, BaseVectorOps> || std::derived_from<std::remove_reference_t<T>, BaseVectorOps>;
+
+template<DerivedBaseVectorOps A>
+auto operator*(int s, A&& a) {
+  return VectorMulByScalarOp<A>(s, std::forward<A>(a));
+}
+
+template<DerivedBaseVectorOps A>
+auto operator*(A&& a, int s) {
+  return VectorMulByScalarOp<A>(s, std::forward<A>(a));
+}
+
+template<DerivedBaseVectorOps A, DerivedBaseVectorOps B>
+auto operator+(A&& a, B&& b) {
+  return VectorAddOp<A, B>(std::forward<A>(a), std::forward<B>(b));
+}
+
+template<DerivedBaseVectorOps A, DerivedBaseVectorOps B>
+auto operator-(A&& a, B&& b) {
+  return VectorAddOp<A, VectorMulByScalarOp<B>>(std::forward<A>(a), VectorMulByScalarOp<B>(-1, std::forward<B>(b)));
+}
+
+//struct A {
+//  int a;
+//};
+//
+//struct B {
+//  int a;
+//};
+//
+//template<typename D, typename E>
+//auto operator+(D& a, E& b) {
+//  A c{a.a+b.a};
+//  return c;
+//}
 
 int main(){
   using V = Vector<10>;
@@ -202,6 +153,16 @@ int main(){
   // (evaluating whole expression)
   V z = v + x + 3 * y - 2 * x;
   cout << z << endl;
+
+  V z2 = 2 * (v + x + 3 * y - 2 * x);
+  cout << z2 << endl;
+
+  V z3 = (v + x + 3 * y - 2 * x) * 3;
+  cout << z3 << endl;
+
+  //A a{1};
+  //B b{1};
+  //A c = a+b;
 
   // Computes only one coordinate of Vector
   int e = (z+x+y)[2];
