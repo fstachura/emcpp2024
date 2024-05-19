@@ -127,19 +127,27 @@ auto operator-(A&& a, B&& b) {
   return VectorAddOp<A, VectorMulByScalarOp<B>>(std::forward<A>(a), VectorMulByScalarOp<B>(-1, std::forward<B>(b)));
 }
 
-//struct A {
-//  int a;
-//};
-//
-//struct B {
-//  int a;
-//};
-//
-//template<typename D, typename E>
-//auto operator+(D& a, E& b) {
-//  A c{a.a+b.a};
-//  return c;
-//}
+class Base {
+};
+
+template<typename T>
+concept DerivedBaseAB = std::derived_from<T, Base> || std::derived_from<std::remove_reference_t<T>, Base>;
+
+struct A: public Base {
+  int a;
+  A(int a): a(a) {}
+};
+
+struct B: public Base {
+  int a;
+  B(int a): a(a) {}
+};
+
+template<DerivedBaseAB D, DerivedBaseAB E>
+auto operator+(D& a, E& b) {
+  A c{a.a+b.a};
+  return c;
+}
 
 int main(){
   using V = Vector<10>;
@@ -160,9 +168,10 @@ int main(){
   V z3 = (v + x + 3 * y - 2 * x) * 3;
   cout << z3 << endl;
 
-  //A a{1};
-  //B b{1};
-  //A c = a+b;
+  A a{1};
+  B b{1};
+  A c = a+b;
+  std::cout<<c.a<<std::endl;
 
   // Computes only one coordinate of Vector
   int e = (z+x+y)[2];
