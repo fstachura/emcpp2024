@@ -153,6 +153,16 @@ auto test(A& a, B b) -> decltype(a[b]) {
 * enum class - scoped 
 * enum - unscoped, enum members are available globally
 
+### user literals
+
+only the following parameter lists are allowed on literal operators:
+* const char*
+* unsigned long long int
+* long double
+(...)
+
+https://en.cppreference.com/w/cpp/language/user_literal
+
 ### sources
 
 * https://eli.thegreenplace.net/2011/12/15/understanding-lvalues-and-rvalues-in-c-and-c/#id3
